@@ -1,0 +1,18 @@
+root = Dashboard("Hetzner Production Fleet", "Cluster hel1-prod", [
+  Alert("success", "All 9 nodes healthy"),
+  Row([
+    Stat("Nodes", "9/9", "+0", Sparkline([9, 9, 9, 9, 9, 9, 9, 9], "ok")),
+    Stat("PG18", "Active", "lag: 0ms", Sparkline([0, 0, 1, 0, 0, 0], "ok")),
+    Stat("LiteLLM", "192ms", "-12ms", Sparkline([220, 210, 204, 198, 192], "info"))
+  ]),
+  Progress("Disk Usage", 62),
+  Table([
+    Col("Server", ["api-gateway-01", "pg-primary-01", "cache-node-01"]),
+    Col("Status", ["OK", "OK", "OK"]),
+    Col("Memory", ["1.2 GB", "31.4 GB", "4.8 GB"]),
+    Col("CPU Load", ["14%", "42%", "8%"])
+  ]),
+  Divider("Runbook Actions"),
+  Panel("Active Runbooks", ["Verify S3 object storage backup status", "Check error telemetry traces"]),
+  Button("Run Health Check")
+])

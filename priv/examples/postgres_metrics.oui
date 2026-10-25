@@ -1,0 +1,22 @@
+root = Dashboard("PostgreSQL 18 Telemetry", "Primary db-hel1-master", [
+  Alert("info", "Operating normally under expected query load"),
+  Row([
+    Stat("Active Conn", "48/200", "+3", Sparkline([32, 35, 41, 45, 48], "info")),
+    Stat("TPS", "1,842", "+120", Sparkline([1400, 1620, 1750, 1842], "ok")),
+    Stat("Cache Hit", "99.4%", "buffer pool", Sparkline([99.1, 99.2, 99.4], "ok"))
+  ]),
+  Divider("Disk Saturation"),
+  BarList([
+    BarItem("/var/lib/postgresql", 68, "68% (136 GB / 200 GB)"),
+    BarItem("/wal_archive", 22, "22% (22 GB / 100 GB)"),
+    BarItem("/tmp", 5, "5% (1 GB / 20 GB)")
+  ]),
+  Divider("Top Queries"),
+  Table([
+    Col("Query ID", ["q_user_auth", "q_load_feed", "q_order_sum"]),
+    Col("Calls", ["14,209", "8,912", "1,043"]),
+    Col("Mean Time", ["1.2ms", "4.8ms", "18.4ms"]),
+    Col("Status", ["OK", "OK", "WARN"])
+  ]),
+  Button("Trigger Checkpoint")
+])
