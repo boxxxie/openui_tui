@@ -1,6 +1,6 @@
 # OpenUI TUI Maker & Studio (`openui_tui`)
 
-**Conversational Terminal UI (TUI) Studio, Agentic UI Builder, and 1Hz Live Telemetry Engine for Elixir — powered by [`openui_lang`](../openui_lang), [Jido](https://hex.pm/packages/jido), Google Gemini, and TypeSafe Jev.**
+**Conversational Terminal UI (TUI) Studio, Agentic UI Builder, and 1Hz Live Telemetry Engine for Elixir — powered by [`openui_lang`](https://github.com/boxxxie/openui_lang), [Jido](https://hex.pm/packages/jido), Google Gemini, and TypeSafe Jev.**
 
 `openui_tui` lets you build, inspect, and evolve interactive Terminal UIs through an **`antigravity-cli`-inspired chat interface** (`mix openui.studio`). Each app in the workspace has its own isolated chat history, revision stack (`/undo`), interactive keyboard controls, and zero-token 1Hz live data streams (`Memcached`, `BEAM VM`, Linux CLI, and `openui_tui`'s own LiteLLM/Jev telemetry).
 
@@ -12,20 +12,20 @@
   - Clean bottom composer dock (`❯ `) with live `/` slash-command autocomplete popup (`/model`, `/new`, `/apps`, `/split`, `/code`, `/undo`, `/reset`, `/help`).
   - Inline Jido agent tool execution trees (`├─ ✔ Jido.ClassifyIntent`, `├─ ✔ Jido.EvolveUI`, `├─ ✔ Jido.CreateApp`, `├─ ✔ Jido.SwitchModel`, `├─ ✔ Jido.AnswerQuestion`).
   - Per-turn and cumulative session receipts showing active model badge (`gemini-3.8-flash`, `gemini-4-argon (low)`), prompt/completion token counts, cache hit tier (`L1 Cachex` / `L2 Memcached`), and `$` spend.
-- **Jido Agent & Action Architecture (`OpenUITUI.Studio.Agent`):**
-  - Built on `{:jido, "~> 2.4"}` (`OpenUITUI.Jido`) with 5 typed `Jido.Action` workflows:
-    1. `OpenUITUI.Studio.Actions.ClassifyIntent` — Calls TypeSafe Jev (`typesafe/jev-latest` on `/v1/systemone`) in ~190ms at `$0.00` effective cost to route between `create_new_app`, `switch_model`, `ask_question_or_meta`, and `build_or_modify_ui`.
-    2. `OpenUITUI.Studio.Actions.CreateApp` — Creates a brand-new App with its own isolated chat conversation (`"make new app"`, `"make a new app for llm metrics for the openui_tui app itself"`) and adds it to the App list without overwriting your current app.
-    3. `OpenUITUI.Studio.Actions.SwitchModel` — Switches the active Gemini model and reasoning effort via natural language (`"use argon low"`, `"use gemini 3.8 flash"`) or `/model <name> [low|medium|high]`.
-    4. `OpenUITUI.Studio.Actions.AnswerQuestion` — Answers architectural or live-metrics questions in chat without mutating the active UI.
-    5. `OpenUITUI.Studio.Actions.EvolveUI` — Evolves or patches the active App's `openui-lang` program (`v1 ➔ v2`) and records a structured `Δ UI Changes` diff (`+added`, `~updated`, `-pruned`).
+- **Jido Agent & Action Architecture ([`OpenUITUI.Studio.Agent`](lib/openui_tui/studio/agent.ex)):**
+  - Built on `{:jido, "~> 2.4"}` ([`OpenUITUI.Jido`](lib/openui_tui/jido.ex)) with 5 typed `Jido.Action` workflows:
+    1. [`OpenUITUI.Studio.Actions.ClassifyIntent`](lib/openui_tui/studio/actions/classify_intent.ex) — Calls TypeSafe Jev (`typesafe/jev-latest` on `/v1/systemone`) in ~190ms at `$0.00` effective cost to route between `create_new_app`, `switch_model`, `ask_question_or_meta`, and `build_or_modify_ui`.
+    2. [`OpenUITUI.Studio.Actions.CreateApp`](lib/openui_tui/studio/actions/create_app.ex) — Creates a brand-new App with its own isolated chat conversation (`"make new app"`, `"make a new app for llm metrics for the openui_tui app itself"`) and adds it to the App list without overwriting your current app.
+    3. [`OpenUITUI.Studio.Actions.SwitchModel`](lib/openui_tui/studio/actions/switch_model.ex) — Switches the active Gemini model and reasoning effort via natural language (`"use argon low"`, `"use gemini 3.8 flash"`) or `/model <name> [low|medium|high]`.
+    4. [`OpenUITUI.Studio.Actions.AnswerQuestion`](lib/openui_tui/studio/actions/answer_question.ex) — Answers architectural or live-metrics questions in chat without mutating the active UI.
+    5. [`OpenUITUI.Studio.Actions.EvolveUI`](lib/openui_tui/studio/actions/evolve_ui.ex) — Evolves or patches the active App's `openui-lang` program (`v1 ➔ v2`) and records a structured `Δ UI Changes` diff (`+added`, `~updated`, `-pruned`).
 - **Two-Loop Real-Time Data Plane (Zero LLM Tokens at 1Hz):**
   - **Loop 1 (Control Plane):** Jev + Gemini generate or patch declarative `openui-lang` statements (`StreamSource(...)`, `Bind(...)`, `Dashboard(...)`, `Panel(...)`, `Form(...)`) only when you ask in Chat.
-  - **Loop 2 (1Hz Elixir Data Plane):** `OpenUITUI.LiveSession` polls local sources every 1000ms in pure Elixir with **zero LLM token spend**:
+  - **Loop 2 (1Hz Elixir Data Plane):** [`OpenUITUI.LiveSession`](lib/openui_tui/live_session.ex) polls local sources every 1000ms in pure Elixir with **zero LLM token spend**:
     - `StreamSource("memcached", "127.0.0.1:11211", 1000)` — Powered by the standalone [`OpenUITUI.Memcached.Parser`](lib/openui_tui/memcached/parser.ex) library (`stats`, `stats slabs`, `stats items`, rate deltas, 18-point ring-buffer sparklines, and top populated slab distribution).
     - `StreamSource("openui_telemetry", "local", 1000)` — Powered by [`OpenUITUI.LLMTelemetry.Parser`](lib/openui_tui/llm_telemetry/parser.ex), streaming real-time Gemini & TypeSafe Jev calls, L1/L2 cache hit rates, token counts, and `SpendGuard` budget metrics from `priv/telemetry/events.jsonl`.
     - `StreamSource("beam", "beam", "erlang:memory", "term", 1000)` — Live BEAM VM memory and process count bindings.
-    - `StreamSource("host", "exec", "vmstat 1 2", "columns", 2000)` — Allowlisted local CLI metric probes normalized via `OpenUITUI.SourceNormalizer`.
+    - `StreamSource("host", "exec", "vmstat 1 2", "columns", 2000)` — Allowlisted local CLI metric probes normalized via [`OpenUITUI.SourceNormalizer`](lib/openui_tui/source_normalizer.ex).
 - **5 Elixir TUI Renderers:**
   - `:fixed_80` (responsive full-screen / 80-column Unicode box-drawing renderer with `╭─ ◆ Title ───╮` bordered panels, braille/block sparklines, and 1/8th fractional bar lists)
   - `:owl` (`Owl` bordered boxes and ANSI tag styling)
@@ -34,14 +34,14 @@
   - `:compact_ops` (single-screen SRE summary renderer)
 - **Two-Tier Caching & `$1.00` Spend Guardrail:**
   - Every Jev and Gemini request is deduplicated through **L1 `Cachex`** (in-memory ETS) and **L2 `Memcached`** (`127.0.0.1:11211`).
-  - `OpenUITUI.SpendGuard` enforces a configurable `$1.00` budget cap (`OPENUI_BUDGET_LIMIT_USD`) and automatically generates Markdown + OpenUI spend reports on budget threshold events.
+  - [`OpenUITUI.SpendGuard`](lib/openui_tui/spend_guard.ex) enforces a configurable `$1.00` budget cap (`OPENUI_BUDGET_LIMIT_USD`) and automatically generates Markdown + OpenUI spend reports on budget threshold events.
 
 ---
 
 ## Prerequisites & Installation
 
 1. **Elixir `~> 1.18`** (OTP 27+)
-2. **[`openui_lang`](../openui_lang)** cloned alongside `openui_tui` (or configured in `mix.exs`)
+2. **[`openui_lang`](https://github.com/boxxxie/openui_lang)** cloned alongside `openui_tui` (so `../openui_lang` resolves out of the box)
 3. **Optional Local Services:**
    - **LiteLLM Proxy** (or OpenAI-compatible gateway) for live Gemini + TypeSafe Jev calls
    - **Memcached** (`127.0.0.1:11211`) for L2 response caching and the live Memcached telemetry starter app (falls back gracefully to deterministic local metrics if Memcached is not running)
@@ -59,7 +59,7 @@ mix deps.get
 
 `openui_tui` ships with safe public defaults in [`config/config.exs`](config/config.exs) (`http://localhost:4000` and no hardcoded keys).
 
-You can configure your LiteLLM Proxy endpoint and virtual API key using **either** environment variables (see [`.env.example`](.env.example)) **or** a gitignored `config/local.secret.exs` file (see [`config/local.secret.exs.example`](config/local.secret.exs.example)):
+You can configure your LiteLLM Proxy endpoint and virtual API key using **either** a gitignored `config/local.secret.exs` file (see [`config/local.secret.exs.example`](config/local.secret.exs.example)) **or** environment variables (see [`.env.example`](.env.example)):
 
 ### Option A: `config/local.secret.exs` (Recommended for Local Dev)
 
@@ -204,6 +204,12 @@ mix test test/openui_tui/memcached_parser_test.exs test/openui_tui/jido_agent_te
 # Run full suite (including live LiteLLM + Memcached integration tests when configured)
 mix test
 ```
+
+---
+
+## Companion Project
+
+- **[`openui_lang`](https://github.com/boxxxie/openui_lang):** Zero-dependency Elixir parser, streaming engine, runtime evaluator, and prompt generator for OpenUI Lang 1.0.
 
 ---
 
