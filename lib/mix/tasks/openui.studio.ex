@@ -205,7 +205,7 @@ defmodule Mix.Tasks.Openui.Studio do
     initial_tab = parse_tab(Keyword.get(opts, :tab, "split"))
     {:ok, session} = Session.start_link(app_id: Keyword.get(opts, :app), initial_tab: initial_tab)
 
-    raw_mode? = enter_raw_mode()
+    {raw_mode?, saved_stty} = enter_raw_mode()
     reader_pid = if raw_mode?, do: start_input_reader(self()), else: nil
 
     # Enter Alternate Screen Buffer & hide cursor
@@ -219,6 +219,7 @@ defmodule Mix.Tasks.Openui.Studio do
       end
     rescue
       e ->
+        restore_raw_mode(saved_stty)
         path = CrashReporter.record_exception(e, __STACKTRACE__, %{mode: :interactive_studio})
         IO.write(["\e[?25h", "\e[?1049l"])
 
@@ -233,21 +234,90 @@ defmodule Mix.Tasks.Openui.Studio do
         Process.exit(reader_pid, :kill)
       end
 
+      restore_raw_mode(saved_stty)
       IO.write(["\e[?25h", "\e[?1049l"])
     end
   end
 
   defp enter_raw_mode do
+    case save_stty_state() do
+      {:ok, saved_stty} when saved_stty != "" ->
+        case set_stty_state("raw -echo -ixon -isig") do
+          :ok ->
+            _ = :io.setopts(binary: true, echo: false)
+            {true, saved_stty}
+
+          _ ->
+            fallback_shell_raw_mode()
+        end
+
+      _ ->
+        fallback_shell_raw_mode()
+    end
+  end
+
+  defp fallback_shell_raw_mode do
     try do
       case :shell.start_interactive({:noshell, :raw}) do
-        :ok -> true
-        {:error, :already_started} -> true
-        _ -> false
+        :ok -> {true, nil}
+        {:error, :already_started} -> {true, nil}
+        _ -> {false, nil}
       end
     rescue
-      _ -> false
+      _ -> {false, nil}
     catch
-      _, _ -> false
+      _, _ -> {false, nil}
+    end
+  end
+
+  defp restore_raw_mode(saved_stty) when is_binary(saved_stty) and saved_stty != "" do
+    _ = set_stty_state(saved_stty)
+    :ok
+  end
+
+  defp restore_raw_mode(_), do: :ok
+
+  defp save_stty_state do
+    tmp = Path.join(System.tmp_dir!(), "openui_stty_#{System.unique_integer([:positive])}")
+
+    try do
+      p =
+        Port.open({:spawn, "stty -g <&1 > #{tmp} 2>/dev/null"}, [
+          :binary,
+          :nouse_stdio,
+          :exit_status
+        ])
+
+      receive do
+        {^p, {:exit_status, 0}} -> {:ok, String.trim(File.read!(tmp))}
+        {^p, {:exit_status, code}} -> {:error, code}
+      after
+        500 -> {:error, :timeout}
+      end
+    rescue
+      _ -> {:error, :failed}
+    after
+      File.rm(tmp)
+    end
+  end
+
+  defp set_stty_state(args) when is_binary(args) do
+    try do
+      p =
+        Port.open({:spawn, "stty #{args} <&1 >/dev/null 2>&1"}, [
+          :binary,
+          :nouse_stdio,
+          :exit_status
+        ])
+
+      receive do
+        {^p, {:exit_status, 0}} -> :ok
+        {^p, {:exit_status, code}} -> {:error, code}
+      after
+        500 -> {:error, :timeout}
+      end
+    rescue
+      _ -> {:error, :failed}
     end
   end
 
