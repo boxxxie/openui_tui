@@ -1,6 +1,6 @@
 # OpenUI TUI Maker & Studio (`openui_tui`)
 
-**Conversational Terminal UI (TUI) Studio, Agentic UI Builder, and 1Hz Live Telemetry Engine for Elixir — powered by [`openui_lang`](https://github.com/boxxxie/openui_lang), [Jido](https://hex.pm/packages/jido), Google Gemini, and TypeSafe Jev.**
+**Conversational Terminal UI (TUI) Studio, Agentic UI Builder, and 1Hz Live Telemetry Engine for Elixir — powered by [`openui_lang`](https://hex.pm/packages/openui_lang), [Jido](https://hex.pm/packages/jido), Google Gemini, and TypeSafe Jev.**
 
 `openui_tui` lets you build, inspect, and evolve interactive Terminal UIs through an **`antigravity-cli`-inspired chat interface** (`mix openui.studio`). Each app in the workspace has its own isolated chat history, revision stack (`/undo`), interactive keyboard controls, and zero-token 1Hz live data streams (`Memcached`, `BEAM VM`, Linux CLI, and `openui_tui`'s own LiteLLM/Jev telemetry).
 
@@ -40,14 +40,12 @@
 
 ## Prerequisites & Installation
 
-1. **Elixir `~> 1.18`** (OTP 27+)
-2. **[`openui_lang`](https://github.com/boxxxie/openui_lang)** cloned alongside `openui_tui` (so `../openui_lang` resolves out of the box)
-3. **Optional Local Services:**
+1. **Elixir `~> 1.18`** (OTP 27+) and **Zig** (used by [`openui_lang`](https://hex.pm/packages/openui_lang) to compile its NIF on `mix deps.compile`)
+2. **Optional Local Services:**
    - **LiteLLM Proxy** (or OpenAI-compatible gateway) for live Gemini + TypeSafe Jev calls
    - **Memcached** (`127.0.0.1:11211`) for L2 response caching and the live Memcached telemetry starter app (falls back gracefully to deterministic local metrics if Memcached is not running)
 
 ```bash
-git clone https://github.com/boxxxie/openui_lang.git
 git clone https://github.com/boxxxie/openui_tui.git
 cd openui_tui
 mix deps.get
@@ -209,7 +207,7 @@ mix test
 
 ## Companion Project
 
-- **[`openui_lang`](https://github.com/boxxxie/openui_lang):** Zero-dependency Elixir parser, streaming engine, runtime evaluator, and prompt generator for OpenUI Lang 1.0.
+- **[`openui_lang`](https://hex.pm/packages/openui_lang) ([GitHub](https://github.com/boxxxie/openui_lang)):** High-performance Elixir + Zig NIF parser, streaming engine, runtime evaluator, and prompt generator for OpenUI Lang 1.0.
 
 ---
 

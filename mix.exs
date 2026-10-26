@@ -31,7 +31,7 @@ defmodule OpenUITUI.MixProject do
 
   defp deps do
     [
-      {:openui_lang, path: "../openui_lang"},
+      {:openui_lang, "~> 1.0"},
       {:jido, "~> 2.4"},
       {:owl, "~> 0.13.1"},
       {:table_rex, "~> 4.1"},
